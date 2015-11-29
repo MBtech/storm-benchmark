@@ -47,12 +47,12 @@ We assume a Storm cluster is already set up locally.
 2. Run. We use SOL as an example. 
 
   ```bash
-    bin/stormbench -storm ${STORM_HOME}/bin/storm -jar ./target/storm-benchmark-${VERSION}-jar-with-dependencies.jar -conf ./conf/sol.yaml -c topology.workers=2 storm.benchmark.tools.Runner storm.benchmark.benchmarks.SOL 
+    bin/stormbench -storm ${STORM_HOME}/bin/storm -jar ./target/storm-benchmark-${VERSION}-jar-with-dependencies.jar --config ./conf/sol.yaml -c topology.workers=2 storm.benchmark.tools.Runner storm.benchmark.benchmarks.SOL 
   ```
   
  * `-storm` directs stormbench to look for the storm command
  * `-jar` sets the benchmark jar with all the dependencies in 
- * `-conf` is for user to provide a yaml conf file like `storm/conf/storm.yaml`. Check the `storm-benchmark/conf` folder where conf files are already provided for existing benchmarks
+ * `--config` is for user to provide a yaml conf file like `storm/conf/storm.yaml`. Check the `storm-benchmark/conf` folder where conf files are already provided for existing benchmarks
  * `-c` allows user to set conf through command line without modifying conf files every time
 
  

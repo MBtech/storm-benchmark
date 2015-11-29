@@ -27,9 +27,15 @@
   <name>storm-benchmark</name>
 
   <properties>
-    <storm.version>0.9.3</storm.version>
+    <storm.version>0.9.5</storm.version>
   </properties>
   <dependencies>
+
+    <dependency>
+	<groupId>org.yaml</groupId>
+	<artifactId>snakeyaml</artifactId>
+	<version>1.14</version>
+</dependency>
     <dependency>
       <groupId>org.apache.storm</groupId>
       <artifactId>storm-core</artifactId>
@@ -88,6 +94,12 @@
       <artifactId>testng</artifactId>
       <version>6.8</version>
       <scope>test</scope>
+      <!--<exclusions>
+       # <exclusion>
+       # <artifactId>snakeyaml</artifactId>
+       # <groupId>org.yaml</groupId>
+      #  </exclusion>
+     </exclusions> -->
     </dependency>
     <dependency>
       <groupId>org.easytesting</groupId>
