@@ -29,12 +29,12 @@ import java.util.HashMap;
 import org.apache.log4j.Logger;
 import storm.benchmark.tools.FileReader;
 
+
 import java.util.Map;
 import java.util.logging.Level;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.joda.time.Instant;
 import storm.benchmark.metrics.Latencies;
 import storm.benchmark.tools.HDFSFileReader;
 
@@ -42,28 +42,19 @@ public class FileReadSpout extends BaseRichSpout {
 
     private static final Logger LOG = Logger.getLogger(FileReadSpout.class);
     private static final long serialVersionUID = -2582705611472467172L;
-
+ 
+    //public static final String DEFAULT_FILE = "/resources/A_Tale_of_Two_City.txt";
     public static final String DEFAULT_FILE = "hdfs://nimbus1:9000/A_Tale_of_Two_City.txt";
+    
     public static final boolean DEFAULT_ACK = false;
     public static final String FIELDS = "sentence";
-    public static long INTERVAL = 10000;
-    public static long LIMIT = 50000;
-    private long spout_num = 0;
-    private long executorLimit = 0;
 
     public final boolean ackEnabled;
     public HDFSFileReader reader;
     private SpoutOutputCollector collector;
     public static Configuration conf = new Configuration();
     private long count = 0;
-    private boolean flag = true;
-    private long time = 0;
-    private long ncount = 0;
-    private long next = 0;
-    private float timeGap = 0;
-    private int countPerGap = 0;
-    private long last = 0;
-
+    
     transient Latencies _latencies;
     public static final HashMap<Long, Long> timeStamps
             = new HashMap<Long, Long>();
@@ -78,9 +69,8 @@ public class FileReadSpout extends BaseRichSpout {
 
     public FileReadSpout(boolean ackEnabled, String file) {
         this.ackEnabled = ackEnabled;
-
-        this.reader
-                = new HDFSFileReader(file);
+        this.reader =
+                new HDFSFileReader(file);
     }
 
     public FileReadSpout(boolean ackEnabled, HDFSFileReader reader) {
@@ -91,62 +81,17 @@ public class FileReadSpout extends BaseRichSpout {
     @Override
     public void open(Map conf, TopologyContext context,
             SpoutOutputCollector collector) {
-        time = System.currentTimeMillis();
         _latencies = new Latencies();
         context.registerMetric("latencies", _latencies, 10);
-        System.out.println("Conf values " + conf.toString());
-        spout_num = (Long) conf.get("component.spout_num");
-        INTERVAL = (Long) conf.get("benchmark.spout.interval");
-        LIMIT = (Long) conf.get("benchmark.spout.tuple_limit");
-        executorLimit = LIMIT / spout_num;
-        timeGap = (float)INTERVAL / executorLimit;
-        System.out.println("Open!! Time Gap " + timeGap  + " "+INTERVAL + " "+executorLimit);
-        //If time Gap is smaller than a milli second send multiple
-        //tuples in each millisecond gap
-        if (timeGap < 1) {
-            countPerGap = (int) (1 / timeGap);
-            System.out.println("Open!! Time Gap " + timeGap + " countPerGap " + countPerGap);
-	    timeGap = 1;
-        }else{
-	    countPerGap = 1;
-	}
-	last = time;
-        next = time + (long)timeGap;
         this.collector = collector;
     }
 
     @Override
     public void nextTuple() {
         if (ackEnabled) {
-            long current = System.currentTimeMillis();
-	    long timePast = current - last;
-	    long tupleCount  = (long) ((timePast/timeGap)*countPerGap); 
-            System.out.println("Amount of time Passed " + timePast + " Time Gap " + timeGap + " countPerGap " + countPerGap);
-	    long extra = (long) (timePast % timeGap);
-	    //if (next <= current + timeGap) {
-                //long diff = current - time;
-                System.out.println("Success!!! Current time: " + current + " and last time " + last + " tuple Count: " + tupleCount + " extra: "+extra);
-                for (int i = 0; i < tupleCount; i++) {
-                   // if (flag && ncount < executorLimit) {
-                        collector.emit(new Values(reader.nextLine()), count);
-                        timeStamps.put(count, current);
-                        count++;
-                     //  ncount++;
-                   /* } else if (ncount >= executorLimit) {
-                       ncount = 0;
-                        flag = false;
-                    } else if (diff >= INTERVAL) {
-                        time = current;
-                        flag = true;
-                    }*/
-                }
-                //next = next + (long) timeGap;
-		last = current - extra;
-            //System.out.println("Next one!!! Current time: " + current + " and next time " + next);
-	    //}else{
-            //System.out.println("Failure!!! Current time: " + current + " and next time " + next);
-            //}
-
+            collector.emit(new Values(reader.nextLine()), count);
+            timeStamps.put(count, System.currentTimeMillis());
+            count++;
         } else {
             collector.emit(new Values(reader.nextLine()));
         }
@@ -156,7 +101,7 @@ public class FileReadSpout extends BaseRichSpout {
     public void ack(Object msgId) {
         Long id = (Long) msgId;
         _latencies.add((int) (System.currentTimeMillis() - timeStamps.get(id)));
-        //System.out.println(System.currentTimeMillis() - timeStamps.get(id));
+        System.out.println(System.currentTimeMillis() - timeStamps.get(id));
         //timeStamps.put(id, System.currentTimeMillis()-timeStamps.get(id));
     }
 
@@ -166,3 +111,4 @@ public class FileReadSpout extends BaseRichSpout {
     }
 
 }
+

@@ -221,6 +221,7 @@ public class BasicMetricsCollector implements IMetricsCollector {
 
               double lat = MetricsUtils.getSpoutCompleteLatency(spStats, ALL_TIME, stream);
               LOG.debug(String.format("spout %s complete latency in stream %s during window %s", id, stream, ALL_TIME));
+              //LOG.info(String.format("spout %s complete latency in stream %s during window %s", id, stream, ALL_TIME));
               MetricsUtils.addLatency(comLat, id, lat);
             } else {
               LOG.debug("skip non-default and non-batch stream: " + stream
@@ -239,6 +240,8 @@ public class BasicMetricsCollector implements IMetricsCollector {
       }
       for (String id : comLat.keySet()) {
         List<Double> latList = comLat.get(id);
+	//System.out.println("For id: " + id);
+	//System.out.println(latList);
         double avg = null == latList ? 0.0 : BenchmarkUtils.avg(latList);
         double max = null == latList ? 0.0 : BenchmarkUtils.max(latList);
         metrics.put(SPOUT_AVG_COMPLETE_LATENCY,

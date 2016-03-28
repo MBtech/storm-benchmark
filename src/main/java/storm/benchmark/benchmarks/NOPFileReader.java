@@ -24,15 +24,14 @@ import backtype.storm.topology.IRichSpout;
 import backtype.storm.topology.TopologyBuilder;
 import backtype.storm.tuple.Fields;
 import storm.benchmark.benchmarks.common.WordCount;
+import storm.benchmark.benchmarks.Nop;
 import storm.benchmark.lib.bolt.RollingCountBolt;
 import storm.benchmark.lib.bolt.RollingBolt;
 import storm.benchmark.lib.spout.FileReadSpout;
 import storm.benchmark.benchmarks.common.StormBenchmark;
 import storm.benchmark.util.BenchmarkUtils;
 
-import backtype.storm.metric.LoggingMetricsConsumer;
-
-public class RollingCount extends StormBenchmark {
+public class NOPFileReader extends StormBenchmark {
 
   private static final String WINDOW_LENGTH = "window.length";
   private static final String EMIT_FREQ = "emit.frequency";
@@ -54,8 +53,8 @@ public class RollingCount extends StormBenchmark {
   public StormTopology getTopology(Config config) {
 
     final int spoutNum = BenchmarkUtils.getInt(config, SPOUT_NUM, DEFAULT_SPOUT_NUM);
-    final int spBoltNum = BenchmarkUtils.getInt(config, SPLIT_NUM, DEFAULT_SP_BOLT_NUM);
-    final int rcBoltNum = BenchmarkUtils.getInt(config, COUNTER_NUM, DEFAULT_RC_BOLT_NUM);
+    final int nopBoltNum = BenchmarkUtils.getInt(config, SPLIT_NUM, DEFAULT_SP_BOLT_NUM);
+    //final int rcBoltNum = BenchmarkUtils.getInt(config, COUNTER_NUM, DEFAULT_RC_BOLT_NUM);
     final int windowLength = BenchmarkUtils.getInt(config, WINDOW_LENGTH,
             RollingBolt.DEFAULT_SLIDING_WINDOW_IN_SECONDS);
     final int emitFreq = BenchmarkUtils.getInt(config, EMIT_FREQ,
@@ -66,10 +65,8 @@ public class RollingCount extends StormBenchmark {
     TopologyBuilder builder = new TopologyBuilder();
 
     builder.setSpout(SPOUT_ID, spout, spoutNum);
-    builder.setBolt(SPLIT_ID, new WordCount.SplitSentence(), spBoltNum)
+    builder.setBolt(SPLIT_ID, new Nop(), nopBoltNum)
             .localOrShuffleGrouping(SPOUT_ID);
-    builder.setBolt(COUNTER_ID, new RollingCountBolt(windowLength, emitFreq), rcBoltNum)
-            .fieldsGrouping(SPLIT_ID, new Fields(WordCount.SplitSentence.FIELDS));
     return builder.createTopology();
   }
 }
