@@ -46,6 +46,7 @@ public class FileReadSpout extends BaseRichSpout {
     public static final String DEFAULT_FILE = "hdfs://nimbus1:9000/A_Tale_of_Two_City.txt";
     public static final boolean DEFAULT_ACK = false;
     public static final String FIELDS = "sentence";
+    public static final String TIMESTAMP = "timestamp";
     public static long INTERVAL = 10000;
     public static long LIMIT = 50000;
     private long spout_num = 0;
@@ -135,7 +136,7 @@ public class FileReadSpout extends BaseRichSpout {
                 System.out.println("Success!!! Current time: " + current + " and last time " + last + " tuple Count: " + tupleCount + " extra: "+extra);
                 for (int i = 0; i < tupleCount; i++) {
                    // if (flag && ncount < executorLimit) {
-                        collector.emit(new Values(reader.nextLine()), count);
+                        collector.emit(new Values(reader.nextLine(),current), count);
                         timeStamps.put(count, current);
                         count++;
                      //  ncount++;
@@ -169,7 +170,7 @@ public class FileReadSpout extends BaseRichSpout {
          try{
          long start = timeStamps.get(id);
          timeStamps.remove(id);
-         _latencies.add((int) (System.currentTimeMillis() - start));
+         //_latencies.add((int) (System.currentTimeMillis() - start));
          }
          catch(NullPointerException ex){
                System.out.println("Id of the message is: "+ id);
@@ -181,7 +182,7 @@ public class FileReadSpout extends BaseRichSpout {
 
     @Override
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
-        declarer.declare(new Fields(FIELDS));
+        declarer.declare(new Fields(FIELDS,TIMESTAMP));
     }
 
 }

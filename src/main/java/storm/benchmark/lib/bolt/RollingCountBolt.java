@@ -19,9 +19,11 @@
 package storm.benchmark.lib.bolt;
 
 import backtype.storm.Config;
-import backtype.storm.topology.BasicOutputCollector;
 import backtype.storm.topology.OutputFieldsDeclarer;
+import backtype.storm.topology.BasicOutputCollector;
 import backtype.storm.tuple.Fields;
+import backtype.storm.task.OutputCollector;
+import backtype.storm.task.TopologyContext;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
 import org.apache.log4j.Logger;
@@ -31,7 +33,8 @@ import storm.benchmark.tools.SlidingWindow;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
-
+import java.lang.NullPointerException;
+import storm.benchmark.metrics.Latencies;
 /**
  * forked from RollingCountBolt in storm-starter
  */
@@ -42,9 +45,11 @@ public class RollingCountBolt extends RollingBolt {
   private static final Logger LOG = Logger.getLogger(RollingCountBolt.class);
   public static final String FIELDS_OBJ = "obj";
   public static final String FIELDS_CNT = "count";
+  public static final String TIMESTAMP = "timestamp";
 
   private final SlidingWindow<Object, Long> window;
-
+  transient Latencies _latencies;
+   
   public RollingCountBolt() {
     this(DEFAULT_SLIDING_WINDOW_IN_SECONDS, DEFAULT_EMIT_FREQUENCY_IN_SECONDS);
   }
@@ -53,7 +58,7 @@ public class RollingCountBolt extends RollingBolt {
     super(winLen, emitFreq);
     window = new SlidingWindow<Object, Long>(new LongSummer(), getWindowChunks());
   }
-
+@Override public void prepare(Map conf, TopologyContext context, BasicOutputCollector collector) { _latencies = new Latencies(); }
   @Override
   public void emitCurrentWindow(BasicOutputCollector collector) {
     emitCurrentWindowCounts(collector);
@@ -76,6 +81,15 @@ public class RollingCountBolt extends RollingBolt {
 
   private void countObj(Tuple tuple) {
     Object obj = tuple.getValue(0);
+    long creation = (Long) tuple.getValue(1);
+    long time = System.currentTimeMillis();
+    try{
+    _latencies.add((int) (time-creation));
+    //LOG.info(String.format("Tuple latency %d ms", time-creation));
+    }
+    catch(NullPointerException ex){
+    	LOG.info(String.format("Creation time %d. Processed at %d", creation, time));
+    }
     window.add(obj, (long) 1);
   }
 

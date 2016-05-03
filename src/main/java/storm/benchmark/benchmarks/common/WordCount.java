@@ -84,13 +84,13 @@ public abstract class WordCount extends StormBenchmark {
     @Override
     public void execute(Tuple input, BasicOutputCollector collector) {
       for (String word : WordSplit.splitSentence(input.getString(0))) {
-        collector.emit(new Values(word));
+        collector.emit(new Values(word,input.getValue(1)));
       }
     }
 
     @Override
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
-      declarer.declare(new Fields(FIELDS));
+      declarer.declare(new Fields(FIELDS,"timestamp"));
     }
 
   }
