@@ -63,8 +63,9 @@ public class FileReadSpout extends BaseRichSpout {
     private float timeGap = 0;
     private int countPerGap = 0;
     private long last = 0;
-
+    private long RAMPTIME = 50000;
     transient Latencies _latencies;
+    private float factor = 1;
     public static final HashMap<Long, Long> timeStamps
             = new HashMap<Long, Long>();
 
@@ -119,9 +120,15 @@ public class FileReadSpout extends BaseRichSpout {
     public void nextTuple() {
         if (ackEnabled) {
             long current = System.currentTimeMillis();
+            if(current-time<RAMPTIME){
+	         factor = (RAMPTIME/(current-time));
+            }else{
+                 factor = 1;
+	    }
+            
 	    long timePast = current - last;
-	    long tupleCount  = (long) ((timePast/timeGap)*countPerGap); 
-            System.out.println("Amount of time Passed " + timePast + " Time Gap " + timeGap + " countPerGap " + countPerGap);
+	    long tupleCount  = (long) ((timePast/(timeGap*factor))*countPerGap) ; 
+            System.out.println("Amount of time Passed " + timePast + " Time Gap " + timeGap +" with factor "+ factor + " countPerGap " + countPerGap);
 	    long extra = (long) (timePast % timeGap);
 	    //if (next <= current + timeGap) {
                 //long diff = current - time;
@@ -155,7 +162,19 @@ public class FileReadSpout extends BaseRichSpout {
     @Override
     public void ack(Object msgId) {
         Long id = (Long) msgId;
-        _latencies.add((int) (System.currentTimeMillis() - timeStamps.get(id)));
+        if(!timeStamps.containsKey(id) || timeStamps.get(id)==null || id==null){
+          System.out.println("Id of the message is: "+ id);
+        }
+        else{
+         try{
+         long start = timeStamps.get(id);
+         timeStamps.remove(id);
+         _latencies.add((int) (System.currentTimeMillis() - start));
+         }
+         catch(NullPointerException ex){
+               System.out.println("Id of the message is: "+ id);
+         }
+        }
         //System.out.println(System.currentTimeMillis() - timeStamps.get(id));
         //timeStamps.put(id, System.currentTimeMillis()-timeStamps.get(id));
     }
