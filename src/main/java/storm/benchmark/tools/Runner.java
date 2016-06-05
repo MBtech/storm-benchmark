@@ -101,7 +101,7 @@ public class Runner {
           throws AlreadyAliveException, InvalidTopologyException {
     String name = (String) config.get(Config.TOPOLOGY_NAME);
     topology = app.getTopology(config);
-    config.registerMetricsConsumer(LoggingMetricsConsumer.class, 1); 
+    config.registerMetricsConsumer(LatencyConsumer.class, 3); 
     StormSubmitter.submitTopology(name, config, topology);
   }
 

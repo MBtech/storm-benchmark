@@ -29,12 +29,13 @@ import backtype.storm.tuple.Values;
 import org.apache.log4j.Logger;
 import storm.benchmark.lib.reducer.LongSummer;
 import storm.benchmark.tools.SlidingWindow;
-
+import storm.benchmark.metrics.LatencyConsumer;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.lang.NullPointerException;
 import storm.benchmark.metrics.Latencies;
+import redis.clients.jedis.Jedis;
 /**
  * forked from RollingCountBolt in storm-starter
  */
@@ -46,7 +47,8 @@ public class RollingCountBolt extends RollingBolt {
   public static final String FIELDS_OBJ = "obj";
   public static final String FIELDS_CNT = "count";
   public static final String TIMESTAMP = "timestamp";
-
+ 
+  static transient Jedis jedis;
   private final SlidingWindow<Object, Long> window;
   transient Latencies _latencies;
    
@@ -57,8 +59,8 @@ public class RollingCountBolt extends RollingBolt {
   public RollingCountBolt(int winLen, int emitFreq) {
     super(winLen, emitFreq);
     window = new SlidingWindow<Object, Long>(new LongSummer(), getWindowChunks());
+    _latencies = new Latencies();
   }
-@Override public void prepare(Map conf, TopologyContext context, BasicOutputCollector collector) { _latencies = new Latencies(); }
   @Override
   public void emitCurrentWindow(BasicOutputCollector collector) {
     emitCurrentWindowCounts(collector);
@@ -68,7 +70,11 @@ public class RollingCountBolt extends RollingBolt {
   public void updateCurrentWindow(Tuple tuple) {
     countObj(tuple);
   }
-
+  @Override public void prepare(Map stormConf, TopologyContext context) {
+      _latencies = new Latencies();
+      context.registerMetric("latencies", _latencies, 10);  
+      jedis = new Jedis("130.104.230.108");
+ }
   private void emitCurrentWindowCounts(BasicOutputCollector collector) {
     Map<Object, Long> counts = window.reduceThenAdvanceWindow();
     for (Entry<Object, Long> entry : counts.entrySet()) {
@@ -80,16 +86,15 @@ public class RollingCountBolt extends RollingBolt {
   }
 
   private void countObj(Tuple tuple) {
-    Object obj = tuple.getValue(0);
+      Object obj = tuple.getValue(0);
     long creation = (Long) tuple.getValue(1);
     long time = System.currentTimeMillis();
-    try{
+    //LOG.info(String.format("Latency is %d",(int) (time-creation)));
+    //System.out.println("Latency: " + (int)(time-creation));
     _latencies.add((int) (time-creation));
-    //LOG.info(String.format("Tuple latency %d ms", time-creation));
-    }
-    catch(NullPointerException ex){
-    	LOG.info(String.format("Creation time %d. Processed at %d", creation, time));
-    }
+    //jedis.set((String)tuple.getValue(0), String.valueOf(time-creation));
+    //jedis.rpush((String) obj, String.valueOf(time-creation));
+
     window.add(obj, (long) 1);
   }
 

@@ -27,6 +27,10 @@ import backtype.storm.metric.api.IMetricsConsumer;
 import backtype.storm.task.IErrorReporter;
 import backtype.storm.task.TopologyContext;
 import backtype.storm.utils.Utils;
+import redis.clients.jedis.Jedis;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
 
 /*
  * Listens for all metrics, dumps them to log
@@ -43,31 +47,41 @@ import backtype.storm.utils.Utils;
  */
 public class LatencyConsumer implements IMetricsConsumer {
     public static final Logger LOG = LoggerFactory.getLogger(LatencyConsumer.class);
-
+    static transient Jedis jedis;
+    static transient DateFormat dateFormat;
+    static transient Calendar cal;
     @Override
-    public void prepare(Map stormConf, Object registrationArgument, TopologyContext context, IErrorReporter errorReporter) { }
+    public void prepare(Map stormConf, Object registrationArgument, TopologyContext context, IErrorReporter errorReporter) { 
+    jedis = new Jedis("130.104.230.108");
+    dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+    }
 
     static private String padding = "                       ";
 
     @Override
     public void handleDataPoints(TaskInfo taskInfo, Collection<DataPoint> dataPoints) {
         StringBuilder sb = new StringBuilder();
-        String header = String.format("%d\t%15s:%-4d\t%3d:%-11s\t",
+        cal = Calendar.getInstance();
+        String header = String.format("%s%d%15s:%-4d%3d:%-11s",
+            dateFormat.format(cal.getTime()),
             taskInfo.timestamp,
             taskInfo.srcWorkerHost, taskInfo.srcWorkerPort,
             taskInfo.srcTaskId,
             taskInfo.srcComponentId);
         sb.append(header);
         for (DataPoint p : dataPoints) {
-            sb.delete(header.length(), sb.length());
+	    if(p.name.contains("latencies")){
+            /*sb.delete(header.length(), sb.length());
             sb.append(p.name)
                 .append(padding).delete(header.length()+23,sb.length()).append("\t")
                 .append(p.value);
             LOG.info(sb.toString());
+            */
+            jedis.set(header, p.value.toString());
+	    }
         }
     }
 
     @Override
     public void cleanup() { }
 }
-

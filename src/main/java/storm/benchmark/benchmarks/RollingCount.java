@@ -26,6 +26,7 @@ import backtype.storm.tuple.Fields;
 import storm.benchmark.benchmarks.common.WordCount;
 import storm.benchmark.lib.bolt.RollingCountBolt;
 import storm.benchmark.lib.bolt.RollingBolt;
+import storm.benchmark.lib.bolt.FileSink;
 import storm.benchmark.lib.spout.FileReadSpout;
 import storm.benchmark.benchmarks.common.StormBenchmark;
 import storm.benchmark.util.BenchmarkUtils;
@@ -70,6 +71,7 @@ public class RollingCount extends StormBenchmark {
             .localOrShuffleGrouping(SPOUT_ID);
     builder.setBolt(COUNTER_ID, new RollingCountBolt(windowLength, emitFreq), rcBoltNum)
             .fieldsGrouping(SPLIT_ID, new Fields(WordCount.SplitSentence.FIELDS));
+//    builder.setBolt("file sink", new FileSink(), 3).localOrShuffleGrouping(COUNTER_ID);
     return builder.createTopology();
   }
 }

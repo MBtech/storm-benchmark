@@ -49,6 +49,7 @@ public class FileReadSpout extends BaseRichSpout {
     public static final String TIMESTAMP = "timestamp";
     public static long INTERVAL = 10000;
     public static long LIMIT = 50000;
+    public static long TOTALTIME = 1800000;
     private long spout_num = 0;
     private long executorLimit = 0;
 
@@ -64,8 +65,8 @@ public class FileReadSpout extends BaseRichSpout {
     private float timeGap = 0;
     private int countPerGap = 0;
     private long last = 0;
-    private long RAMPTIME = 50000;
-    transient Latencies _latencies;
+    private long RAMPTIME = 150000;
+    //transient Latencies _latencies;
     private float factor = 1;
     public static final HashMap<Long, Long> timeStamps
             = new HashMap<Long, Long>();
@@ -94,8 +95,8 @@ public class FileReadSpout extends BaseRichSpout {
     public void open(Map conf, TopologyContext context,
             SpoutOutputCollector collector) {
         time = System.currentTimeMillis();
-        _latencies = new Latencies();
-        context.registerMetric("latencies", _latencies, 10);
+      //  _latencies = new Latencies();
+       // context.registerMetric("latencies", _latencies, 10);
         System.out.println("Conf values " + conf.toString());
         spout_num = (Long) conf.get("component.spout_num");
         INTERVAL = (Long) conf.get("benchmark.spout.interval");
@@ -119,8 +120,8 @@ public class FileReadSpout extends BaseRichSpout {
 
     @Override
     public void nextTuple() {
-        if (ackEnabled) {
-            long current = System.currentTimeMillis();
+        long current = System.currentTimeMillis();
+        if (ackEnabled && current-time<TOTALTIME) {
             if(current-time<RAMPTIME){
 	         factor = (RAMPTIME/(current-time));
             }else{
@@ -155,7 +156,7 @@ public class FileReadSpout extends BaseRichSpout {
             //System.out.println("Failure!!! Current time: " + current + " and next time " + next);
             //}
 
-        } else {
+        } else if (current-time<TOTALTIME) {
             collector.emit(new Values(reader.nextLine()));
         }
     }
